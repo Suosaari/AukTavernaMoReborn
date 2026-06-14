@@ -53,3 +53,37 @@ html.mod-rage-shake {
     opacity: 1;
   }
 }
+
+.mod-chaos-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+.mod-chaos-number {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: min(60vh, 55vw);
+  font-weight: 900;
+  line-height: 1;
+  color: #ffcc00;
+  text-shadow:
+    0 0 30px rgba(255, 90, 0, 0.9),
+    0 0 90px rgba(255, 0, 0, 0.7);
+  animation: mod-chaos-pulse 0.42s ease-in-out infinite alternate;
+}
+
+@keyframes mod-chaos-pulse {
+  from {
+    transform: scale(0.9) rotate(-3deg);
+    opacity: 0.85;
+  }
+  to {
+    transform: scale(1.1) rotate(3deg);
+    opacity: 1;
+  }
+}

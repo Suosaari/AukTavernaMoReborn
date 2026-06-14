@@ -6,6 +6,7 @@ import { useContext, useMemo } from 'react';
 
 import * as wheelItem from '@domains/winner-selection/wheel-of-random/lib/item';
 import LotPistolBadge from '@domains/elimination-events/ui/LotPistolBadge';
+import LotBombBadge from '@domains/elimination-events/ui/LotBombBadge';
 import { WheelContext } from '@domains/winner-selection/wheel-of-random/settings/ui/Context/wheelContextData';
 import { WheelItemWithMetadata } from '@models/wheel.model.ts';
 
@@ -44,6 +45,7 @@ const Item = ({ item, disabled, total, actionable, hideName }: Props) => {
     >
       { item.isFavorite && <StarIcon /> }
       <LotPistolBadge lotId={item.id} size={15} />
+      <LotBombBadge lotId={item.id} size={15} />
       <Text className={classes.name}>{displayName}</Text>
       <Text className={classes.amount}>{Number(amountToDisplay.toFixed(2))}</Text>
       <Divider orientation='vertical' />

@@ -90,6 +90,8 @@ interface RandomWheelProps<TWheelItem extends WheelItem = WheelItem> {
   onWheelItemsChanged?: (items: TWheelItem[]) => void;
   onSettingsChanged?: (settings: Wheel.Settings) => void;
   onSpinStart?: (params: SpinStartCallbackParams) => void;
+  /** Awaited before each spin resolves — lets events (e.g. "67") play first. */
+  onBeforeSpin?: () => Promise<void>;
   trackAuctionHistoryWinner?: boolean;
 }
 
@@ -100,6 +102,8 @@ export interface RandomWheelController {
   requestSpin?: (durationOverride?: number) => Promise<void>;
   /** Eliminates a specific item from the wheel (eat animation + removal). */
   eliminateItem?: (id: string | number) => Promise<void>;
+  /** Plays the winner-less erratic "67" chaos spin. */
+  chaosSpin?: (durationMs?: number) => Promise<void>;
 }
 
 interface RandomOrgTicketResponse {
@@ -122,6 +126,7 @@ const FullWheelUI = <TWheelItem extends WheelItem = WheelItem>({
   onWin,
   onWheelItemsChanged,
   onSpinStart,
+  onBeforeSpin,
   trackAuctionHistoryWinner = false,
   shouldShuffle = true,
   elements: elementsFromProps,
@@ -212,6 +217,7 @@ const FullWheelUI = <TWheelItem extends WheelItem = WheelItem>({
       spin: wheelController.current ? (params: SpinParams) => wheelController.current!.spin(params) : undefined,
       requestSpin: (durationOverride?: number) => requestSpinRef.current(durationOverride),
       eliminateItem: (id: string | number) => eliminateItemRef.current(id),
+      chaosSpin: (durationMs?: number) => wheelController.current?.chaosSpin(durationMs) ?? Promise.resolve(),
     }),
     [],
   );
@@ -282,6 +288,9 @@ const FullWheelUI = <TWheelItem extends WheelItem = WheelItem>({
 
   const onSpinClick = useCallback(
     async ({ randomnessSource }: Wheel.Settings) => {
+      // Let pre-spin events run first (e.g. the "67" chaos spin), then proceed.
+      await onBeforeSpin?.();
+
       const { min, max } = randomSpinConfig!;
       const durationOverride = spinDurationOverrideRef.current;
       spinDurationOverrideRef.current = null;
@@ -438,6 +447,7 @@ const FullWheelUI = <TWheelItem extends WheelItem = WheelItem>({
       soundtrackEnabled,
       soundtrackSource,
       onSpinStart,
+      onBeforeSpin,
       onSpinEnd,
       onWin,
       trackAuctionHistoryWinner,

@@ -12,6 +12,7 @@ import { AppMain } from '@App/entrypoint/AppMain';
 import { AppNavbar } from '@App/entrypoint/navbar/AppNavbar.tsx';
 import { PortalContextProvider } from '@App/storage/portalContext';
 import { usePistolAssignment } from '@domains/elimination-events/lib/usePistolAssignment';
+import { useBombAssignment } from '@domains/elimination-events/lib/useBombAssignment';
 import AutoloadAutosave from '@domains/auction/archive/ui/AutoloadAutosave';
 import { useInitializeUser } from '@domains/bids/lib/useInitializeUser.ts';
 import { registerPublicApiSocketHandlers } from '@domains/public-api/lib/socket.ts';
@@ -80,6 +81,7 @@ const App: React.FC = () => {
 
   useInitializeUser();
   usePistolAssignment();
+  useBombAssignment();
 
   useEffect(() => {
     return registerGlobalBidFallbackConsumer(async (bid) => {

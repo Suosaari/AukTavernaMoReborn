@@ -22,6 +22,8 @@ export function slotsToArchivedLots(slots: Lot[]): ArchivedLot[] {
     amount: slot.amount,
     contributors: slot.contributors,
     isFavorite: slot.isFavorite,
+    // Preserve which player added the lot so it survives autosave / reload.
+    addedBy: slot.addedBy ?? null,
   }));
 }
 
@@ -37,5 +39,6 @@ export function archivedLotsToSlots(lots: ArchivedLot[]): Lot[] {
     contributors: getArchivedLotContributors(lot),
     lockedPercentage: null,
     isFavorite: lot.isFavorite,
+    addedBy: lot.addedBy ?? null,
   }));
 }

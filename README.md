@@ -32,6 +32,68 @@ pnpm install
 pnpm dev
 ```
 
+## 🐳 Deployment with Docker
+
+The repository ships with a production-ready Docker setup: a multi-stage build compiles the static SPA and serves it with nginx. The **same image runs locally on your PC and on a remote host**.
+
+### Prerequisites
+
+- **Docker** with the **Docker Compose** plugin (Docker Desktop on Windows/macOS already bundles it).
+
+### Quick start (local PC)
+
+```bash
+# 1. Create your env file from the template
+cp .env.example .env          # PowerShell: Copy-Item .env.example .env
+
+# 2. Build the image and start the container in the background
+docker compose up --build -d
+```
+
+The app is now available at **http://localhost:1488**.
+
+If you have Node/pnpm, the same commands are wrapped as scripts:
+
+```bash
+pnpm docker:compose:up        # build + start
+pnpm docker:compose:logs      # follow logs
+pnpm docker:compose:down      # stop and remove
+```
+
+One-command helper that also creates `.env` and checks your Docker install:
+
+```powershell
+# Windows
+powershell -ExecutionPolicy Bypass -File scripts/deploy-docker.ps1
+```
+
+```bash
+# Linux / macOS
+sh scripts/deploy-docker.sh
+```
+
+### Configuration (`.env`)
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `FRONTEND_PORT` | Host port the app is published on. | `1488` |
+| `BACKEND_UPSTREAM` | Backend / Socket.IO URL nginx reverse-proxies to (e.g. `http://backend:8000`). Leave empty to run the frontend only (static SPA mode). | empty |
+| `VITE_*` | Build-time variables baked into the bundle (OAuth client ids, analytics…). All optional. | empty |
+
+The auction, wheel, **rage mode** and **lot-owner ("who added the lot")** features are fully client-side: they work in static SPA mode without a backend and persist to the browser's `localStorage` / `IndexedDB`.
+
+### Deploying on a host
+
+```bash
+git clone https://github.com/Pointauc/pointauc_frontend.git
+cd pointauc_frontend
+cp .env.example .env
+# edit .env: set FRONTEND_PORT and (optionally) BACKEND_UPSTREAM / VITE_* values
+docker compose up --build -d
+```
+
+The container has a built-in healthcheck (`GET /`) and restarts unless explicitly stopped. Put a TLS-terminating reverse proxy (Caddy / Traefik / nginx) in front for HTTPS, or publish `FRONTEND_PORT` behind your existing edge proxy.
+
 ## 🔐 Authenticity Verification
 
 The code running on [pointauc.com](https://pointauc.com) can be verified against this repository. Each deployment generates SHA-256 hashes of all HTML, JS, and CSS files, published as an immutable [GitHub release](https://github.com/Pointauc/pointauc_frontend/releases) with the tag format `deploy-<commit-sha>`.

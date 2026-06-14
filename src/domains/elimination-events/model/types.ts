@@ -47,6 +47,24 @@ export interface PistolConfig {
   misfireChance: number;
 }
 
+/** The "67" meme: a chaotic, drop-baiting spin when exactly N lots remain. */
+export interface ChaosConfig {
+  enabled: boolean;
+  /** Remaining lot count that triggers the chaotic spin. */
+  triggerCount: number;
+  /** Duration of the erratic bait spin played before the real spin, ms. */
+  durationMs: number;
+  sound: SoundConfig;
+}
+
+/** "Шахид": one random lot carries a bomb; on drop it may blow up a neighbour. */
+export interface ShahidConfig {
+  enabled: boolean;
+  /** Number of lots that secretly carry a bomb. */
+  bombCount: number;
+  sound: SoundConfig;
+}
+
 export interface TopLeaderConfig {
   enabled: boolean;
   sound: SoundConfig;
@@ -59,6 +77,8 @@ export interface EventsConfig {
   fog: FogConfig;
   pistol: PistolConfig;
   topLeader: TopLeaderConfig;
+  chaos: ChaosConfig;
+  shahid: ShahidConfig;
 }
 
 export const defaultEventsConfig: EventsConfig = {
@@ -88,5 +108,16 @@ export const defaultEventsConfig: EventsConfig = {
   topLeader: {
     enabled: false,
     sound: { enabled: true, source: null, volume: 0.7 },
+  },
+  chaos: {
+    enabled: true,
+    triggerCount: 67,
+    durationMs: 5000,
+    sound: { enabled: false, source: null, volume: 0.8 },
+  },
+  shahid: {
+    enabled: true,
+    bombCount: 1,
+    sound: { enabled: false, source: null, volume: 0.8 },
   },
 };
