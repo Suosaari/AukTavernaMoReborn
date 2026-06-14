@@ -5,10 +5,12 @@ import './screenEffects.css';
 interface ScreenEffectsProps {
   /** When on, shakes the whole viewport and shows a pulsing red vignette. */
   rageFlash: boolean;
+  /** A huge pulsing number drawn over the screen during the "67" chaos event. */
+  bigNumber?: number | null;
 }
 
-/** Page-level rage visuals: viewport shake (via a class on <html>) + red flash. */
-const ScreenEffects: FC<ScreenEffectsProps> = ({ rageFlash }) => {
+/** Page-level event visuals: rage shake + red flash and the "67" chaos number. */
+const ScreenEffects: FC<ScreenEffectsProps> = ({ rageFlash, bigNumber }) => {
   useEffect(() => {
     const root = document.documentElement;
     if (rageFlash) {
@@ -19,9 +21,16 @@ const ScreenEffects: FC<ScreenEffectsProps> = ({ rageFlash }) => {
     return () => root.classList.remove('mod-rage-shake');
   }, [rageFlash]);
 
-  if (!rageFlash) return null;
-
-  return <div className='mod-rage-overlay' />;
+  return (
+    <>
+      {rageFlash && <div className='mod-rage-overlay' />}
+      {bigNumber != null && (
+        <div className='mod-chaos-overlay'>
+          <span className='mod-chaos-number'>{bigNumber}</span>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default ScreenEffects;

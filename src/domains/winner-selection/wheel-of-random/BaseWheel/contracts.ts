@@ -25,4 +25,6 @@ export interface WheelController {
   highlight: (id: ID) => void;
   resetStyles: () => void;
   eatAnimation: (id: ID, duration?: number) => Promise<void>;
+  /** Purely visual, winner-less erratic spin used by the "67" chaos event. */
+  chaosSpin: (durationMs?: number) => Promise<void>;
 }

@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@reducers';
 
 import { patchEventsConfig, resetEventsConfig } from '../model/eventsConfigSlice';
+
 import SoundSourceField from './SoundSourceField';
 
 const numberProps = { min: 0, size: 'xs', className: 'w-24' } as const;
@@ -15,7 +16,7 @@ const EffectsPanel: FC = () => {
   const config = useSelector((root: RootState) => root.eliminationEvents.config);
   const dispatch = useDispatch();
 
-  const { rageMode, fog, pistol, topLeader } = config;
+  const { rageMode, fog, pistol, topLeader, chaos, shahid } = config;
 
   return (
     <Stack gap='lg'>
@@ -176,6 +177,78 @@ const EffectsPanel: FC = () => {
               dispatch(patchEventsConfig({ topLeader: { sound: { ...topLeader.sound, ...patch } } }))
             }
           />
+        </Stack>
+      </div>
+
+      <Divider />
+
+      <div>
+        <Title order={5} c='yellow.6'>
+          🤯 «67» (хаос-прокрут)
+        </Title>
+        <Stack gap={8} mt={6}>
+          <Switch
+            checked={chaos.enabled}
+            onChange={(event) => dispatch(patchEventsConfig({ chaos: { enabled: event.currentTarget.checked } }))}
+            label='Включить'
+          />
+          <Group gap='sm'>
+            <NumberInput
+              {...numberProps}
+              label='Срабатывает при лотах'
+              value={chaos.triggerCount}
+              onChange={(value) => dispatch(patchEventsConfig({ chaos: { triggerCount: Number(value) } }))}
+            />
+            <NumberInput
+              {...numberProps}
+              label='Длительность, мс'
+              step={500}
+              value={chaos.durationMs}
+              onChange={(value) => dispatch(patchEventsConfig({ chaos: { durationMs: Number(value) } }))}
+            />
+          </Group>
+          <SoundSourceField
+            label='Звук хаоса'
+            mediaKey='sound-chaos'
+            value={chaos.sound}
+            onChange={(patch) => dispatch(patchEventsConfig({ chaos: { sound: { ...chaos.sound, ...patch } } }))}
+          />
+          <Text size='xs' c='dimmed'>
+            Когда на колесе остаётся ровно столько лотов, прокрут «байтит» выпадение, а затем идёт нормально.
+          </Text>
+        </Stack>
+      </div>
+
+      <Divider />
+
+      <div>
+        <Title order={5} c='orange.6'>
+          💣 Шахид
+        </Title>
+        <Stack gap={8} mt={6}>
+          <Switch
+            checked={shahid.enabled}
+            onChange={(event) => dispatch(patchEventsConfig({ shahid: { enabled: event.currentTarget.checked } }))}
+            label='Включить'
+          />
+          <Group gap='sm'>
+            <NumberInput
+              {...numberProps}
+              label='Лотов с бомбой'
+              value={shahid.bombCount}
+              onChange={(value) => dispatch(patchEventsConfig({ shahid: { bombCount: Number(value) } }))}
+            />
+          </Group>
+          <SoundSourceField
+            label='Звук взрыва'
+            mediaKey='sound-shahid'
+            value={shahid.sound}
+            onChange={(patch) => dispatch(patchEventsConfig({ shahid: { sound: { ...shahid.sound, ...patch } } }))}
+          />
+          <Text size='xs' c='dimmed'>
+            Бомба достаётся случайному лоту. При выпадении взрывается один из трёх: сам лот или его сосед слева/справа на
+            колесе.
+          </Text>
         </Stack>
       </div>
 

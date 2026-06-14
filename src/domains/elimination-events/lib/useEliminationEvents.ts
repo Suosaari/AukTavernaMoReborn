@@ -6,8 +6,12 @@ import { WheelItem } from '@models/wheel.model';
 import { RootState } from '@reducers';
 import { RandomWheelController } from '@domains/winner-selection/wheel-of-random/ui/FullWheelUI';
 
+import { removeBombLot, setBombLotIds } from '../model/bombSlice';
 import { removePistolLot, setPistolLotIds } from '../model/pistolSlice';
+import { loadRagePercent, saveRagePercent } from '../model/rageMeterStorage';
+
 import { pickPistolLotIds } from './pickPistolLotIds';
+import { pickShahidTargets, ShahidTarget } from './pickShahidTargets';
 import { playEventSound } from './playEventSound';
 
 const rollPercent = (chance: number): boolean => Math.random() * 100 < chance;
@@ -15,6 +19,13 @@ const rollPercent = (chance: number): boolean => Math.random() * 100 < chance;
 export interface PistolPrompt {
   lotId: string;
   lotName: string;
+}
+
+export interface ShahidPrompt {
+  lotId: string;
+  lotName: string;
+  /** The bomb lot (middle) plus its two wheel neighbours, one of which blows up. */
+  targets: ShahidTarget[];
 }
 
 export interface EliminationRuntime {
@@ -25,6 +36,9 @@ export interface EliminationRuntime {
   /** Drives the screen shake + red flash overlay. */
   rageFlash: boolean;
   pistolPrompt: PistolPrompt | null;
+  /** Huge on-screen number shown during the "67" chaos event (null = hidden). */
+  chaosNumber: number | null;
+  shahidPrompt: ShahidPrompt | null;
 }
 
 interface UseEliminationEventsParams {
@@ -37,10 +51,14 @@ interface UseEliminationEventsResult {
   fog: boolean;
   runtime: EliminationRuntime;
   pistolLotIds: string[];
+  bombLotIds: string[];
   onSpinStart: (winner: WheelItem) => void;
   onWin: (winner: WheelItem) => void;
   onParticipantsChange: (items: WheelItem[]) => void;
+  /** Awaited by the wheel before each spin — plays the "67" chaos spin. */
+  onBeforeSpin: () => Promise<void>;
   closePistolPrompt: () => void;
+  closeShahidPrompt: () => void;
   resetSession: () => void;
 }
 
@@ -57,6 +75,7 @@ export const useEliminationEvents = ({
   const config = useSelector((root: RootState) => root.eliminationEvents.config);
   const players = useSelector((root: RootState) => root.players.players);
   const pistolLotIds = useSelector((root: RootState) => root.pistol.pistolLotIds);
+  const bombLotIds = useSelector((root: RootState) => root.bomb.bombLotIds);
   const slots = useSelector((root: RootState) => root.slots.slots);
   const dispatch = useDispatch();
 
@@ -72,10 +91,20 @@ export const useEliminationEvents = ({
   enabledRef.current = enabled;
   const pistolLotIdsRef = useRef(pistolLotIds);
   pistolLotIdsRef.current = pistolLotIds;
+  const bombLotIdsRef = useRef(bombLotIds);
+  bombLotIdsRef.current = bombLotIds;
   const slotsRef = useRef(slots);
   slotsRef.current = slots;
 
-  const ragePercentRef = useRef(0);
+  // Latest wheel order; snapshotted at spin start so Shahid can find the dropped
+  // lot's neighbours even though the winner is removed before `onWin` fires.
+  const wheelOrderRef = useRef<WheelItem[]>([]);
+  const spinOrderRef = useRef<WheelItem[]>([]);
+  // Guards against overlapping "67" chaos spins from rapid re-clicks.
+  const chaosRunningRef = useRef(false);
+
+  // Seed from the persisted value so an in-progress dropout survives a reload.
+  const ragePercentRef = useRef(loadRagePercent());
   const rageActiveRef = useRef(false);
   const pendingRageRef = useRef(false);
   const fogSpinsLeftRef = useRef(0);
@@ -86,26 +115,42 @@ export const useEliminationEvents = ({
   const gateResolveRef = useRef<(() => void) | null>(null);
 
   const [runtime, setRuntime] = useState<EliminationRuntime>({
-    ragePercent: 0,
+    ragePercent: ragePercentRef.current,
     rageActive: false,
     fogActive: false,
     currentPlayerId: null,
     rageFlash: false,
     pistolPrompt: null,
+    chaosNumber: null,
+    shahidPrompt: null,
   });
 
   const patchRuntime = useCallback((patch: Partial<EliminationRuntime>) => {
     setRuntime((prev) => ({ ...prev, ...patch }));
   }, []);
 
+  // Update the rage meter everywhere at once: the authoritative ref, the
+  // mirrored runtime state, and the persisted value used to restore it.
+  const commitRagePercent = useCallback(
+    (value: number) => {
+      ragePercentRef.current = value;
+      patchRuntime({ ragePercent: value });
+      saveRagePercent(value);
+    },
+    [patchRuntime],
+  );
+
   const resetSession = useCallback(() => {
     ragePercentRef.current = 0;
+    saveRagePercent(0);
     rageActiveRef.current = false;
     pendingRageRef.current = false;
     fogSpinsLeftRef.current = 0;
     playerIndexRef.current = -1;
-    // Re-roll the pistols among the current lots.
+    chaosRunningRef.current = false;
+    // Re-roll the pistols and bombs among the current lots.
     dispatch(setPistolLotIds(pickPistolLotIds(slotsRef.current, configRef.current.pistol.pistolCount)));
+    dispatch(setBombLotIds(pickPistolLotIds(slotsRef.current, configRef.current.shahid.bombCount)));
     setRuntime({
       ragePercent: 0,
       rageActive: false,
@@ -113,6 +158,8 @@ export const useEliminationEvents = ({
       currentPlayerId: null,
       rageFlash: false,
       pistolPrompt: null,
+      chaosNumber: null,
+      shahidPrompt: null,
     });
   }, [dispatch]);
 
@@ -126,6 +173,32 @@ export const useEliminationEvents = ({
     patchRuntime({ pistolPrompt: null });
     openGate();
   }, [patchRuntime, openGate]);
+
+  const closeShahidPrompt = useCallback(() => {
+    patchRuntime({ shahidPrompt: null });
+    openGate();
+  }, [patchRuntime, openGate]);
+
+  // "67" chaos: when exactly `triggerCount` lots remain, play a wild, drop-baiting
+  // visual spin (and overlay number) before the real spin resolves.
+  const onBeforeSpin = useCallback(async () => {
+    if (!enabledRef.current) return;
+    const { chaos } = configRef.current;
+    if (!chaos.enabled || chaosRunningRef.current || rageActiveRef.current) return;
+    if (remainingRef.current !== chaos.triggerCount) return;
+
+    chaosRunningRef.current = true;
+    patchRuntime({ chaosNumber: chaos.triggerCount });
+    playEventSound(chaos.sound);
+    try {
+      await wheelControllerRef.current?.chaosSpin?.(chaos.durationMs);
+    } catch {
+      // Best-effort visual; fall through to the normal spin regardless.
+    } finally {
+      patchRuntime({ chaosNumber: null });
+      chaosRunningRef.current = false;
+    }
+  }, [patchRuntime, wheelControllerRef]);
 
   const runRageBurst = useCallback(async () => {
     if (rageActiveRef.current) return;
@@ -154,6 +227,7 @@ export const useEliminationEvents = ({
 
   const onParticipantsChange = useCallback((items: WheelItem[]) => {
     remainingRef.current = items.length;
+    wheelOrderRef.current = items;
     topLotIdRef.current =
       items.reduce<WheelItem | null>((top, item) => (top == null || item.amount > top.amount ? item : top), null)?.id.toString() ??
       null;
@@ -161,6 +235,9 @@ export const useEliminationEvents = ({
 
   const onSpinStart = useCallback(() => {
     if (!enabledRef.current) return;
+    // Freeze the wheel order now: the dropping lot is removed before `onWin`, so
+    // Shahid reads its neighbours from this snapshot taken while it's still here.
+    spinOrderRef.current = wheelOrderRef.current;
     const { rageMode, fog } = configRef.current;
     const remaining = remainingRef.current;
     const list = playersRef.current;
@@ -184,18 +261,18 @@ export const useEliminationEvents = ({
 
     // Rage: grow the meter and roll for activation (skipped during a burst).
     if (rageMode.enabled && !rageActiveRef.current && remaining > rageMode.minParticipants) {
-      ragePercentRef.current = Math.min(100, ragePercentRef.current + rageMode.incrementPerSpin);
-      patchRuntime({ ragePercent: ragePercentRef.current });
+      commitRagePercent(Math.min(100, ragePercentRef.current + rageMode.incrementPerSpin));
       if (rollPercent(ragePercentRef.current)) {
         pendingRageRef.current = true;
       }
     }
-  }, [patchRuntime]);
+  }, [patchRuntime, commitRagePercent]);
 
   const onWin = useCallback(
     (winner: WheelItem) => {
       if (!enabledRef.current) return;
-      const { topLeader, pistol, rageMode } = configRef.current;
+      const { topLeader, pistol, shahid, rageMode } = configRef.current;
+      const winnerId = winner.id.toString();
       const remainingBefore = remainingRef.current;
 
       // Top leader (highest amount) eliminated -> play the configured sound.
@@ -214,35 +291,58 @@ export const useEliminationEvents = ({
         });
       }
 
+      // Pistol and Shahid both react to the dropped lot; the pistol takes
+      // priority so they never open two prompts on the same elimination.
+      let promptOpened = false;
+
       // Pistol: the eliminated lot carried a pistol -> open the shoot prompt.
-      if (pistol.enabled && pistolLotIdsRef.current.includes(winner.id.toString())) {
-        dispatch(removePistolLot(winner.id.toString()));
+      if (pistol.enabled && pistolLotIdsRef.current.includes(winnerId)) {
+        dispatch(removePistolLot(winnerId));
         gatePromiseRef.current = new Promise<void>((resolve) => {
           gateResolveRef.current = resolve;
         });
         patchRuntime({
-          pistolPrompt: { lotId: winner.id.toString(), lotName: winner.displayName ?? winner.name },
+          pistolPrompt: { lotId: winnerId, lotName: winner.displayName ?? winner.name },
         });
+        promptOpened = true;
+      }
+
+      // Shahid: the eliminated lot carried a bomb -> open the detonation roulette.
+      if (!promptOpened && shahid.enabled && bombLotIdsRef.current.includes(winnerId)) {
+        dispatch(removeBombLot(winnerId));
+        const targets = pickShahidTargets(spinOrderRef.current, winnerId, playersRef.current);
+        playEventSound(shahid.sound);
+        gatePromiseRef.current = new Promise<void>((resolve) => {
+          gateResolveRef.current = resolve;
+        });
+        patchRuntime({
+          shahidPrompt: { lotId: winnerId, lotName: winner.displayName ?? winner.name, targets },
+        });
+        promptOpened = true;
       }
 
       // Rage activation scheduled by this spin -> launch the burst asynchronously.
       if (pendingRageRef.current && !rageActiveRef.current && remainingRef.current > rageMode.minParticipants) {
         pendingRageRef.current = false;
-        ragePercentRef.current = 0;
-        patchRuntime({ ragePercent: 0 });
+        commitRagePercent(0);
         setTimeout(() => {
           runRageBurst();
         }, 0);
       }
     },
-    [patchRuntime, runRageBurst, dispatch],
+    [patchRuntime, runRageBurst, dispatch, commitRagePercent],
   );
 
-  // Reset the per-session state if the events get disabled or leave dropout mode.
+  // Reset the per-session state only on a real enabled -> disabled transition
+  // (events turned off or the wheel left dropout mode). Skipping the initial
+  // mount keeps the persisted rage/pistols alive while the wheel settings, which
+  // decide the format, are still loading asynchronously.
+  const wasEnabledRef = useRef(enabled);
   useEffect(() => {
-    if (!enabled) {
+    if (wasEnabledRef.current && !enabled) {
       resetSession();
     }
+    wasEnabledRef.current = enabled;
   }, [enabled, resetSession]);
 
   return {
@@ -250,10 +350,13 @@ export const useEliminationEvents = ({
     fog: runtime.fogActive,
     runtime,
     pistolLotIds,
+    bombLotIds,
     onSpinStart,
     onWin,
     onParticipantsChange,
+    onBeforeSpin,
     closePistolPrompt,
+    closeShahidPrompt,
     resetSession,
   };
 };

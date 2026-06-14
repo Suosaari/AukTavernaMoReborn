@@ -1,6 +1,7 @@
 import { Overlay, Popover, Stack, Text, Title } from '@mantine/core';
 import { throttle } from '@tanstack/react-pacer';
 import clsx from 'clsx';
+import gsap from 'gsap';
 import {
   MutableRefObject,
   useCallback,
@@ -18,6 +19,7 @@ import TwitchEmotesList from '@components/TwitchEmotesList/TwitchEmotesList';
 import { ID } from '@components/Bracket/components/model';
 import { getWinnerFromDistance } from '@domains/winner-selection/wheel-of-random/lib/geometry';
 import { WheelItem, WheelItemWithAngle } from '@models/wheel.model';
+import { random } from '@utils/common.utils';
 
 import classes from './BaseWheel.module.css';
 import wheelHelpers from './helpers';
@@ -241,6 +243,61 @@ const BaseWheel = <T extends WheelItem>(props: BaseWheelProps<T>) => {
     [finalizeSpin],
   );
 
+  // The "67" chaos spin: a purely visual sequence of wild accelerations and
+  // hard fake-out stops ("baiting" a drop) that resolves no winner. The real
+  // spin runs afterwards and lands normally regardless of where this stops.
+  const chaosSpin = useCallback((durationMs = 5000): Promise<void> => {
+    const handle = spinningWheelRef.current;
+    if (!handle) return Promise.resolve();
+
+    setIsSpinning(true);
+    const state = { rotation: handle.getRotation() };
+    const apply = (): void => handle.setRotation(state.rotation);
+
+    const totalSeconds = Math.max(1, durationMs / 1000);
+    const baitCount = 4;
+
+    return new Promise<void>((resolve) => {
+      const timeline = gsap.timeline({
+        onComplete: () => {
+          setIsSpinning(false);
+          resolve();
+        },
+      });
+
+      let remaining = totalSeconds;
+      for (let index = 0; index < baitCount; index += 1) {
+        const isLast = index === baitCount - 1;
+        const cycle = isLast ? remaining : (remaining / (baitCount - index)) * random.getFloat(0.7, 1.15);
+        remaining = Math.max(0, remaining - cycle);
+
+        // Wild acceleration...
+        timeline.to(state, {
+          rotation: `+=${random.getFloat(540, 1260)}`,
+          duration: cycle * 0.65,
+          ease: 'power3.in',
+          onUpdate: apply,
+        });
+        // ...then a hard fake-out stop, as if a lot is about to drop.
+        timeline.to(state, {
+          rotation: `+=${random.getFloat(25, 110)}`,
+          duration: cycle * 0.35,
+          ease: 'power4.out',
+          onUpdate: apply,
+        });
+        // A nervous twitch between baits.
+        if (!isLast) {
+          timeline.to(state, {
+            rotation: `+=${random.getFloat(-10, 10)}`,
+            duration: 0.12,
+            ease: 'power1.inOut',
+            onUpdate: apply,
+          });
+        }
+      }
+    });
+  }, []);
+
   useImperativeHandle(
     controller,
     () => ({
@@ -254,9 +311,10 @@ const BaseWheel = <T extends WheelItem>(props: BaseWheelProps<T>) => {
       eatAnimation: async (id: ID, duration?: number) => {
         await spinningWheelRef.current?.eatAnimation(id, duration);
       },
+      chaosSpin,
       getItems: () => normalizedRef.current,
     }),
-    [clearWinner, resetPosition, resetStyles, spin],
+    [chaosSpin, clearWinner, resetPosition, resetStyles, spin],
   );
 
   const SpinningWheel = parts.spinningWheel;

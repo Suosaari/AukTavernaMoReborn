@@ -16,9 +16,9 @@ import LotContributorSummary from '@shared/ui/LotContributorSummary';
 import { animateValue } from '@utils/common.utils.ts';
 import { numberUtils } from '@utils/common/number';
 import { LotsColumnContext } from '@pages/auction/SlotsColumn/contexts';
-
 import LotOwnerControl from '@domains/players/ui/LotOwnerControl';
 import LotPistolBadge from '@domains/elimination-events/ui/LotPistolBadge';
+import LotBombBadge from '@domains/elimination-events/ui/LotBombBadge';
 
 import LotActionsPopover from './LotActionsPopover';
 import LotNameField from './LotNameField';
@@ -141,6 +141,7 @@ const LotControls: FC<LotControlsProps> = ({ lot, readonly }) => {
       </div>
       <LotNameField id={id} name={name} isLocked={isLocked} onKeyPress={createNewSlotOnEnter} />
       <LotPistolBadge lotId={id} />
+      <LotBombBadge lotId={id} />
       {!readonly && !isMobile && <LotOwnerControl lotId={id} addedBy={lot.addedBy} />}
       {showViewerNames && <LotContributorSummary contributors={lot.contributors} hideAmounts={hideAmounts} />}
       {showChances && (

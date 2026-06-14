@@ -7,6 +7,7 @@ import players from '../domains/players/model/playersSlice';
 import decorations from '../domains/custom-decor/model/decorationsSlice';
 import eliminationEvents from '../domains/elimination-events/model/eventsConfigSlice';
 import pistol from '../domains/elimination-events/model/pistolSlice';
+import bomb from '../domains/elimination-events/model/bombSlice';
 
 import actionsLog from './ActionsLog/ActionsLog';
 import slots from './Slots/Slots';
@@ -31,6 +32,7 @@ const rootReducer = combineReducers({
   decorations,
   eliminationEvents,
   pistol,
+  bomb,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

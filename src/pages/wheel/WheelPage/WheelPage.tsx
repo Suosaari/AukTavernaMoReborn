@@ -15,6 +15,7 @@ import { WheelFormat } from '@constants/wheel';
 import { useEliminationEvents } from '@domains/elimination-events/lib/useEliminationEvents';
 import ScreenEffects from '@domains/elimination-events/ui/ScreenEffects';
 import PistolDialog from '@domains/elimination-events/ui/PistolDialog';
+import ShahidDialog from '@domains/elimination-events/ui/ShahidDialog';
 import RageMeter from '@domains/elimination-events/ui/RageMeter';
 import WheelPlayersList from '@domains/elimination-events/ui/WheelPlayersList';
 import EffectsButton from '@domains/elimination-events/ui/EffectsButton';
@@ -25,6 +26,7 @@ import { WheelItem } from '@models/wheel.model';
 import { RootState } from '@reducers';
 import { deleteSlot, initialSlots, setSlots } from '@reducers/Slots/Slots';
 import { removePistolLot } from '@domains/elimination-events/model/pistolSlice';
+import { removeBombLot } from '@domains/elimination-events/model/bombSlice';
 import { SlotListToWheelList } from '@utils/slots.utils';
 import {
   useSaveWheelSettings,
@@ -96,6 +98,14 @@ const WheelPage: FC = () => {
     [dispatch],
   );
 
+  const handleShahidEliminate = useCallback(
+    (lotId: string) => {
+      wheelController.current?.eliminateItem?.(lotId);
+      dispatch(removeBombLot(lotId));
+    },
+    [dispatch],
+  );
+
   const title = (
     <Group>
       <Title order={1}>{t('wheel.wheel')}</Title>
@@ -137,6 +147,7 @@ const WheelPage: FC = () => {
           onSettingsChanged={handleSettingsChangedDebounced}
           form={wheelForm}
           onSpinStart={handleSpinStart}
+          onBeforeSpin={events.onBeforeSpin}
           onWin={events.onWin}
           fog={events.fog}
           wheelOverlay={
@@ -176,11 +187,16 @@ const WheelPage: FC = () => {
         </RandomWheel>
       )}
       <WheelDecorations />
-      <ScreenEffects rageFlash={events.runtime.rageFlash} />
+      <ScreenEffects rageFlash={events.runtime.rageFlash} bigNumber={events.runtime.chaosNumber} />
       <PistolDialog
         prompt={events.runtime.pistolPrompt}
         onClose={events.closePistolPrompt}
         onEliminate={handlePistolEliminate}
+      />
+      <ShahidDialog
+        prompt={events.runtime.shahidPrompt}
+        onClose={events.closeShahidPrompt}
+        onExplode={handleShahidEliminate}
       />
     </PageContainer>
   );
