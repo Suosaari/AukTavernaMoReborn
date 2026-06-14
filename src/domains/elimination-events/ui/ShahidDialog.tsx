@@ -27,8 +27,17 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
   const explodedRef = useRef(false);
 
   // Run the detonation roulette once each time a prompt opens.
+  // On a misfire the bomb simply failed to detonate: no roulette, no extra
+  // elimination — the bomb lot itself already dropped out as the spin winner.
   useEffect(() => {
     if (!prompt || prompt.targets.length === 0) return undefined;
+
+    if (prompt.misfire) {
+      explodedRef.current = true; // nothing to detonate
+      setPhase({ kind: 'result', victimId: '' });
+      setActiveIndex(0);
+      return undefined;
+    }
 
     const { targets } = prompt;
     const victimIndex = Math.floor(Math.random() * targets.length);
@@ -77,6 +86,7 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
 
   const isResult = typeof phase === 'object';
   const targets = prompt?.targets ?? [];
+  const misfire = prompt?.misfire ?? false;
 
   return (
     <Modal
@@ -102,7 +112,7 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
         </Stack>
       ) : (
         <Stack>
-          <Text size='sm'>{!isResult ? 'Бомба активирована! Кто взорвётся?' : 'Взрыв!'}</Text>
+          <Text size='sm'>{!isResult ? 'Бомба активирована! Кто взорвётся?' : misfire ? 'Осечка!' : 'Взрыв!'}</Text>
           <Group grow align='stretch'>
             {targets.map((target, index) => {
               const isVictim = isResult && phase.victimId === target.lotId;
@@ -167,9 +177,15 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
           </Group>
           {isResult && (
             <>
-              <Text fw={700} c='red' ta='center'>
-                💥 Лот выбывает!
-              </Text>
+              {misfire ? (
+                <Text fw={700} c='yellow' ta='center'>
+                  🤦 Осечка — соседи спасены! Сам лот-бомба выбывает.
+                </Text>
+              ) : (
+                <Text fw={700} c='red' ta='center'>
+                  💥 Лот выбывает!
+                </Text>
+              )}
               <Group justify='flex-end'>
                 <Button onClick={handleClose}>Закрыть</Button>
               </Group>

@@ -62,6 +62,8 @@ export interface ShahidConfig {
   enabled: boolean;
   /** Number of lots that secretly carry a bomb. */
   bombCount: number;
+  /** Chance the bomb fails to detonate (no neighbour is hit), percent. The bomb lot itself drops out regardless — it is the spin winner. */
+  misfireChance: number;
   sound: SoundConfig;
 }
 
@@ -118,6 +120,7 @@ export const defaultEventsConfig: EventsConfig = {
   shahid: {
     enabled: true,
     bombCount: 1,
+    misfireChance: 10,
     sound: { enabled: false, source: null, volume: 0.8 },
   },
 };

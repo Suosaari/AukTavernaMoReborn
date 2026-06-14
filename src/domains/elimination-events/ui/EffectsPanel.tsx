@@ -238,6 +238,12 @@ const EffectsPanel: FC = () => {
               value={shahid.bombCount}
               onChange={(value) => dispatch(patchEventsConfig({ shahid: { bombCount: Number(value) } }))}
             />
+            <NumberInput
+              {...numberProps}
+              label='Шанс осечки, %'
+              value={shahid.misfireChance}
+              onChange={(value) => dispatch(patchEventsConfig({ shahid: { misfireChance: Number(value) } }))}
+            />
           </Group>
           <SoundSourceField
             label='Звук взрыва'
@@ -247,7 +253,7 @@ const EffectsPanel: FC = () => {
           />
           <Text size='xs' c='dimmed'>
             Бомба достаётся случайному лоту. При выпадении взрывается один из трёх: сам лот или его сосед слева/справа на
-            колесе.
+            колесе. С шансом осечки бомба не детонирует — соседи спасены, но сам лот-бомба всегда выбывает.
           </Text>
         </Stack>
       </div>
