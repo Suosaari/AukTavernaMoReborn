@@ -26,8 +26,6 @@ export interface ShahidPrompt {
   lotName: string;
   /** The bomb lot (middle) plus its two wheel neighbours, one of which blows up. */
   targets: ShahidTarget[];
-  /** True when the detonation misfired: no neighbour is hit, the bomb lot itself (the spin winner) just drops out. */
-  misfire: boolean;
 }
 
 export interface EliminationRuntime {
@@ -310,18 +308,15 @@ export const useEliminationEvents = ({
       }
 
       // Shahid: the eliminated lot carried a bomb -> open the detonation roulette.
-      // A misfire roll means the bomb failed to detonate; neighbours are spared and
-      // only the bomb lot itself drops out (it is the spin winner, already removed).
       if (!promptOpened && shahid.enabled && bombLotIdsRef.current.includes(winnerId)) {
         dispatch(removeBombLot(winnerId));
         const targets = pickShahidTargets(spinOrderRef.current, winnerId, playersRef.current);
         playEventSound(shahid.sound);
-        const misfire = targets.length > 0 && rollPercent(shahid.misfireChance);
         gatePromiseRef.current = new Promise<void>((resolve) => {
           gateResolveRef.current = resolve;
         });
         patchRuntime({
-          shahidPrompt: { lotId: winnerId, lotName: winner.displayName ?? winner.name, targets, misfire },
+          shahidPrompt: { lotId: winnerId, lotName: winner.displayName ?? winner.name, targets },
         });
         promptOpened = true;
       }
