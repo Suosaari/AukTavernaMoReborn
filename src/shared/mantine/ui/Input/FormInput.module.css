@@ -1,0 +1,12 @@
+.root.sm {
+  width: 80px;
+}
+
+.root.labelLeft {
+  display: flex;
+  align-items: center;
+}
+
+.root.labelLeft .label {
+  padding-right: var(--mantine-spacing-md);
+}

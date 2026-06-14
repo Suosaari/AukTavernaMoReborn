@@ -1,0 +1,152 @@
+/* Configure CSS layers for Tailwind and Mantine */
+@layer theme, base, mantine, components, utilities;
+
+/* Import Tailwind CSS */
+/* Disabled because it overrides list styles globally */
+@import 'tailwindcss';
+
+@theme {
+  /* Primary: mirrors Mantine `theme.colors.primary` via --mantine-primary-color-* / --mantine-primary-color-filled */
+  --color-primary: var(--mantine-primary-color-filled);
+  --color-primary-50: var(--mantine-primary-color-0);
+  --color-primary-100: var(--mantine-primary-color-1);
+  --color-primary-200: var(--mantine-primary-color-2);
+  --color-primary-300: var(--mantine-primary-color-3);
+  --color-primary-400: var(--mantine-primary-color-4);
+  --color-primary-500: var(--mantine-primary-color-5);
+  --color-primary-600: var(--mantine-primary-color-6);
+  --color-primary-700: var(--mantine-primary-color-7);
+  --color-primary-800: var(--mantine-primary-color-8);
+  --color-primary-900: var(--mantine-primary-color-9);
+  --color-primary-950: var(--mantine-primary-color-9);
+  --color-primary-light: var(--mantine-primary-color-light);
+  --color-primary-light-hover: var(--mantine-primary-color-light-hover);
+
+  --color-dimmed: var(--mantine-color-dimmed);
+
+  --color-paper-text: #dedede;
+
+  --color-paper-50: var(--mantine-color-dark-0);
+  --color-paper-100: var(--mantine-color-dark-1);
+  --color-paper-200: var(--mantine-color-dark-2);
+  --color-paper-300: var(--mantine-color-dark-3);
+  --color-paper-400: var(--mantine-color-dark-4);
+  --color-paper-500: var(--mantine-color-dark-5);
+  --color-paper-600: var(--mantine-color-dark-6);
+  --color-paper-700: var(--mantine-color-dark-7);
+  --color-paper-800: var(--mantine-color-dark-8);
+  --color-paper-900: var(--mantine-color-dark-9);
+  --color-paper-950: #111111;
+
+  --color-paper-transparent-50: var(--mantine-color-darkTransparent-0);
+  --color-paper-transparent-100: var(--mantine-color-darkTransparent-1);
+  --color-paper-transparent-200: var(--mantine-color-darkTransparent-2);
+  --color-paper-transparent-300: var(--mantine-color-darkTransparent-3);
+  --color-paper-transparent-400: var(--mantine-color-darkTransparent-4);
+  --color-paper-transparent-500: var(--mantine-color-darkTransparent-5);
+  --color-paper-transparent-600: var(--mantine-color-darkTransparent-6);
+  --color-paper-transparent-700: var(--mantine-color-darkTransparent-7);
+  --color-paper-transparent-800: var(--mantine-color-darkTransparent-8);
+  --color-paper-transparent-900: var(--mantine-color-darkTransparent-9);
+  --color-paper-transparent-950: var(--mantine-color-darkTransparent-9);
+
+  --color-black: #060606;
+  --color-donation: rgb(246, 100, 108);
+  --color-points: rgb(65, 192, 169);
+
+  /* Elevation tokens */
+  --elevation-dm-hi-base: rgba(255, 255, 255, 0.02);
+  --elevation-dm-hi-mid: rgba(255, 255, 255, 0.05);
+  --elevation-dm-hi-high: rgba(255, 255, 255, 0.08);
+  --elevation-dm-hi-peak: rgba(255, 255, 255, 0.11);
+
+  --elevation-dm-ring-base: rgba(255, 255, 255, 0.02);
+  --elevation-dm-ring-mid: rgba(255, 255, 255, 0.04);
+  --elevation-dm-ring-high: rgba(255, 255, 255, 0.06);
+
+  --elevation-dm-drop: rgba(0, 0, 0, 0.18);
+  --elevation-shadow-color: rgb(0 0 0 / 0.06);
+}
+
+@utility elevated-0 {
+  box-shadow: none;
+}
+
+@utility elevated-1 {
+  box-shadow: inset 0 0 0 1px var(--elevation-dm-ring-base);
+}
+
+@utility elevated-2 {
+  box-shadow:
+    inset 0 1px 0 0 var(--elevation-dm-hi-base),
+    inset 0 0 0 1px var(--elevation-dm-ring-base),
+    0 1px 1px -0.5px var(--elevation-dm-drop);
+}
+
+@utility elevated-3 {
+  box-shadow:
+    inset 0 1px 0 0 var(--elevation-dm-hi-mid),
+    inset 0 0 0 1px var(--elevation-dm-ring-base),
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 1px 1px -0.5px var(--elevation-dm-drop),
+    0 3px 3px -1.5px var(--elevation-dm-drop);
+}
+
+@utility elevated-4 {
+  box-shadow:
+    inset 0 1px 0 0 var(--elevation-dm-hi-mid),
+    inset 0 0 0 1px var(--elevation-dm-ring-mid),
+    0 0 0 1px rgba(0, 0, 0, 0.14),
+    0 1px 1px -0.5px var(--elevation-dm-drop),
+    0 3px 3px -1.5px var(--elevation-dm-drop);
+  /* 0 6px 6px -3px var(--elevation-dm-drop); */
+}
+
+@utility elevated-5 {
+  box-shadow:
+    inset 0 1px 0 0 var(--elevation-dm-hi-high),
+    inset 0 0 0 1px var(--elevation-dm-ring-mid),
+    0 0 0 1px rgba(0, 0, 0, 0.16),
+    0 1px 1px -0.5px var(--elevation-dm-drop),
+    0 3px 3px -1.5px var(--elevation-dm-drop),
+    0 6px 6px -3px var(--elevation-dm-drop);
+  /* 0 12px 12px -6px var(--elevation-dm-drop); */
+}
+
+@utility elevated-6 {
+  box-shadow:
+    inset 0 1px 0 0 var(--elevation-dm-hi-high),
+    inset 0 0 0 1px var(--elevation-dm-ring-high),
+    0 0 0 1px rgba(0, 0, 0, 0.18),
+    0 1px 1px -0.5px var(--elevation-dm-drop),
+    0 3px 3px -1.5px var(--elevation-dm-drop),
+    0 6px 6px -3px var(--elevation-dm-drop),
+    0 12px 12px -6px var(--elevation-dm-drop);
+  /* 0 24px 24px -12px var(--elevation-dm-drop); */
+}
+
+@utility elevated-7 {
+  box-shadow:
+    inset 0 1px 0 0 var(--elevation-dm-hi-peak),
+    inset 0 0 0 1px var(--elevation-dm-ring-high),
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 1px 1px -0.5px var(--elevation-dm-drop),
+    0 3px 3px -1.5px var(--elevation-dm-drop),
+    0 6px 6px -3px var(--elevation-dm-drop),
+    0 12px 12px -6px var(--elevation-dm-drop),
+    0 24px 24px -12px var(--elevation-dm-drop);
+  /* 0 48px 48px -24px var(--elevation-dm-drop); */
+}
+
+@layer base {
+  ol {
+    list-style: decimal;
+  }
+
+  ul {
+    list-style: disc;
+  }
+}
+
+/* Import Mantine styles in the mantine layer */
+@import '@mantine/core/styles.layer.css';

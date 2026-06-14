@@ -1,0 +1,55 @@
+@keyframes mod-rage-shake {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  10% {
+    transform: translate(-6px, 4px) rotate(-0.4deg);
+  }
+  20% {
+    transform: translate(7px, -5px) rotate(0.5deg);
+  }
+  30% {
+    transform: translate(-8px, 6px) rotate(-0.5deg);
+  }
+  40% {
+    transform: translate(6px, 5px) rotate(0.4deg);
+  }
+  50% {
+    transform: translate(-5px, -6px) rotate(-0.4deg);
+  }
+  60% {
+    transform: translate(7px, 4px) rotate(0.5deg);
+  }
+  70% {
+    transform: translate(-6px, -5px) rotate(-0.4deg);
+  }
+  80% {
+    transform: translate(5px, 6px) rotate(0.3deg);
+  }
+  90% {
+    transform: translate(-4px, -3px) rotate(-0.2deg);
+  }
+}
+
+html.mod-rage-shake {
+  animation: mod-rage-shake 0.32s linear infinite;
+}
+
+.mod-rage-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0) 30%, rgba(180, 0, 0, 0.55) 100%);
+  animation: mod-rage-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes mod-rage-pulse {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
