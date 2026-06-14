@@ -1,0 +1,35 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_ORIGIN: ${VITE_BACKEND_ORIGIN:-}
+        VITE_TWITCH_CLIENT_ID: ${VITE_TWITCH_CLIENT_ID:-}
+        VITE_KICK_CLIENT_ID: ${VITE_KICK_CLIENT_ID:-}
+        VITE_VK_VIDEO_LIVE_CLIENT_ID: ${VITE_VK_VIDEO_LIVE_CLIENT_ID:-}
+        VITE_DONATEX_CLIENT_ID: ${VITE_DONATEX_CLIENT_ID:-}
+        VITE_TMDB_API_KEY: ${VITE_TMDB_API_KEY:-}
+        VITE_METADATA_WORKER_URL: ${VITE_METADATA_WORKER_URL:-}
+        VITE_KINOPOISK_METADATA_WORKER_URL: ${VITE_KINOPOISK_METADATA_WORKER_URL:-}
+        VITE_DOCS_BASE_URL: ${VITE_DOCS_BASE_URL:-}
+        VITE_ERROR_TRACKING_PROVIDER: ${VITE_ERROR_TRACKING_PROVIDER:-}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${VITE_SENTRY_ENVIRONMENT:-}
+        VITE_GLITCHTIP_DSN: ${VITE_GLITCHTIP_DSN:-}
+        VITE_GLITCHTIP_ENVIRONMENT: ${VITE_GLITCHTIP_ENVIRONMENT:-}
+        VITE_GOOGLE_TAG_MANAGER_CONTAINER_ID: ${VITE_GOOGLE_TAG_MANAGER_CONTAINER_ID:-}
+        VITE_PUBLIC_POSTHOG_KEY: ${VITE_PUBLIC_POSTHOG_KEY:-}
+        VITE_PUBLIC_POSTHOG_HOST: ${VITE_PUBLIC_POSTHOG_HOST:-}
+    image: pointauc-frontend:latest
+    ports:
+      - '${FRONTEND_PORT:-1488}:80'
+    environment:
+      BACKEND_UPSTREAM: ${BACKEND_UPSTREAM:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://127.0.0.1/ > /dev/null || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

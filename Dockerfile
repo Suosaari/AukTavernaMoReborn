@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1.7
+
 FROM node:22-alpine AS builder
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /app
 
@@ -9,15 +10,62 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+
+ARG VITE_BACKEND_ORIGIN
+ARG VITE_TWITCH_CLIENT_ID
+ARG VITE_KICK_CLIENT_ID
+ARG VITE_VK_VIDEO_LIVE_CLIENT_ID
+ARG VITE_DONATEX_CLIENT_ID
+ARG VITE_TMDB_API_KEY
+ARG VITE_METADATA_WORKER_URL
+ARG VITE_KINOPOISK_METADATA_WORKER_URL
+ARG VITE_DOCS_BASE_URL
+ARG VITE_ERROR_TRACKING_PROVIDER
+ARG VITE_SENTRY_DSN
+ARG VITE_SENTRY_ENVIRONMENT
+ARG VITE_GLITCHTIP_DSN
+ARG VITE_GLITCHTIP_ENVIRONMENT
+ARG VITE_GOOGLE_TAG_MANAGER_CONTAINER_ID
+ARG VITE_PUBLIC_POSTHOG_KEY
+ARG VITE_PUBLIC_POSTHOG_HOST
+
+ENV VITE_BACKEND_ORIGIN=$VITE_BACKEND_ORIGIN \
+    VITE_TWITCH_CLIENT_ID=$VITE_TWITCH_CLIENT_ID \
+    VITE_KICK_CLIENT_ID=$VITE_KICK_CLIENT_ID \
+    VITE_VK_VIDEO_LIVE_CLIENT_ID=$VITE_VK_VIDEO_LIVE_CLIENT_ID \
+    VITE_DONATEX_CLIENT_ID=$VITE_DONATEX_CLIENT_ID \
+    VITE_TMDB_API_KEY=$VITE_TMDB_API_KEY \
+    VITE_METADATA_WORKER_URL=$VITE_METADATA_WORKER_URL \
+    VITE_KINOPOISK_METADATA_WORKER_URL=$VITE_KINOPOISK_METADATA_WORKER_URL \
+    VITE_DOCS_BASE_URL=$VITE_DOCS_BASE_URL \
+    VITE_ERROR_TRACKING_PROVIDER=$VITE_ERROR_TRACKING_PROVIDER \
+    VITE_SENTRY_DSN=$VITE_SENTRY_DSN \
+    VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT \
+    VITE_GLITCHTIP_DSN=$VITE_GLITCHTIP_DSN \
+    VITE_GLITCHTIP_ENVIRONMENT=$VITE_GLITCHTIP_ENVIRONMENT \
+    VITE_GOOGLE_TAG_MANAGER_CONTAINER_ID=$VITE_GOOGLE_TAG_MANAGER_CONTAINER_ID \
+    VITE_PUBLIC_POSTHOG_KEY=$VITE_PUBLIC_POSTHOG_KEY \
+    VITE_PUBLIC_POSTHOG_HOST=$VITE_PUBLIC_POSTHOG_HOST
+
 RUN pnpm run build:ssg
 
 # ---
 
-FROM nginx:alpine
+FROM nginx:1.27-alpine
+
+RUN apk add --no-cache curl gettext
 
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx/private-nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx/nginx.conf /etc/nginx/conf.d/default.static.conf
+COPY nginx/default.proxy.conf.template /etc/nginx/templates/default.proxy.conf.template
+RUN sed -i 's/\r$//' /etc/nginx/conf.d/default.static.conf /etc/nginx/templates/default.proxy.conf.template
+COPY docker/nginx-entrypoint.sh /docker-entrypoint.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 EXPOSE 80
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS http://127.0.0.1/ > /dev/null || exit 1
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
