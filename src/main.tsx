@@ -6,6 +6,9 @@ import '@mantine/charts/styles.css';
 import '@styles/index.scss';
 import './index.css';
 import '@assets/i18n/index.ts';
+// Side-effect import: must run before any crypto.randomUUID() caller (non-secure
+// HTTP hosts don't expose it). Keep this near the top of the entrypoint.
+import '@utils/cryptoPolyfill';
 
 import { Notifications } from '@mantine/notifications';
 import { HotkeysProvider } from '@tanstack/react-hotkeys';
@@ -36,6 +39,7 @@ import rootReducer from '@reducers/index.ts';
 import { configuredAnalyticsProviders, initAnalytics } from '@shared/lib/analytics';
 import { createConfiguredErrorTrackingProvider } from '@shared/lib/error-tracking/providers';
 import { initErrorTracking } from '@shared/lib/error-tracking/service';
+import { requestPersistentStorage } from '@shared/lib/storage/requestPersistentStorage';
 import MantineProvider from '@shared/mantine/MantineProvider.tsx';
 import archiveApi from '@domains/auction/archive/api/IndexedDBAdapter';
 import { createArchiveData } from '@domains/auction/archive/lib/archiveData';
@@ -53,6 +57,10 @@ setupBackendApiConfig();
 initErrorTracking(createConfiguredErrorTrackingProvider());
 initStore(rootReducer);
 registerTestingScenarios(store, []);
+
+// Ask the browser to keep the locally-stored auction data (lots, players,
+// settings, event state) durable across reloads and redeploys.
+void requestPersistentStorage();
 
 const analyticsProviders = configuredAnalyticsProviders.getProviders();
 initAnalytics({

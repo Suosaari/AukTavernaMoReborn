@@ -16,12 +16,11 @@ const item = (id: string, addedBy: string | null = null): WheelItem => ({
 const order = [item('A'), item('B'), item('C'), item('D'), item('E')];
 
 describe('pickShahidTargets', () => {
-  it('returns the dropped lot in the middle with its two neighbours', () => {
+  it('returns the dropped lot\'s left and right neighbours (no middle)', () => {
     const targets = pickShahidTargets(order, 'C', []);
 
     expect(targets.map((target) => [target.position, target.lotId])).toEqual([
       ['left', 'B'],
-      ['middle', 'C'],
       ['right', 'D'],
     ]);
   });
@@ -29,19 +28,17 @@ describe('pickShahidTargets', () => {
   it('wraps around at the edges of the wheel', () => {
     const targets = pickShahidTargets(order, 'A', []);
 
-    expect(targets.map((target) => target.lotId)).toEqual(['E', 'A', 'B']);
+    expect(targets.map((target) => target.lotId)).toEqual(['E', 'B']);
   });
 
-  it('collapses to two cards when only one distinct neighbour exists', () => {
+  it('returns a single neighbour when only one distinct lot is left beside it', () => {
     const targets = pickShahidTargets([item('A'), item('B')], 'A', []);
 
-    expect(targets.map((target) => target.lotId)).toEqual(['B', 'A']);
+    expect(targets.map((target) => target.lotId)).toEqual(['B']);
   });
 
-  it('returns just the middle for a single-lot wheel', () => {
-    const targets = pickShahidTargets([item('A')], 'A', []);
-
-    expect(targets.map((target) => target.position)).toEqual(['middle']);
+  it('returns nothing for a single-lot wheel', () => {
+    expect(pickShahidTargets([item('A')], 'A', [])).toEqual([]);
   });
 
   it('returns nothing when the dropped lot is not on the wheel', () => {
