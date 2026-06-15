@@ -36,6 +36,7 @@ import rootReducer from '@reducers/index.ts';
 import { configuredAnalyticsProviders, initAnalytics } from '@shared/lib/analytics';
 import { createConfiguredErrorTrackingProvider } from '@shared/lib/error-tracking/providers';
 import { initErrorTracking } from '@shared/lib/error-tracking/service';
+import { requestPersistentStorage } from '@shared/lib/storage/requestPersistentStorage';
 import MantineProvider from '@shared/mantine/MantineProvider.tsx';
 import archiveApi from '@domains/auction/archive/api/IndexedDBAdapter';
 import { createArchiveData } from '@domains/auction/archive/lib/archiveData';
@@ -53,6 +54,10 @@ setupBackendApiConfig();
 initErrorTracking(createConfiguredErrorTrackingProvider());
 initStore(rootReducer);
 registerTestingScenarios(store, []);
+
+// Ask the browser to keep the locally-stored auction data (lots, players,
+// settings, event state) durable across reloads and redeploys.
+void requestPersistentStorage();
 
 const analyticsProviders = configuredAnalyticsProviders.getProviders();
 initAnalytics({
