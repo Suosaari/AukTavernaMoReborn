@@ -6,6 +6,9 @@ import '@mantine/charts/styles.css';
 import '@styles/index.scss';
 import './index.css';
 import '@assets/i18n/index.ts';
+// Side-effect import: must run before any crypto.randomUUID() caller (non-secure
+// HTTP hosts don't expose it). Keep this near the top of the entrypoint.
+import '@utils/cryptoPolyfill';
 
 import { Notifications } from '@mantine/notifications';
 import { HotkeysProvider } from '@tanstack/react-hotkeys';
