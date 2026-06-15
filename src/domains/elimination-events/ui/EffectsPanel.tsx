@@ -238,6 +238,12 @@ const EffectsPanel: FC = () => {
               value={shahid.bombCount}
               onChange={(value) => dispatch(patchEventsConfig({ shahid: { bombCount: Number(value) } }))}
             />
+            <NumberInput
+              {...numberProps}
+              label='Шанс осечки, %'
+              value={shahid.misfireChance}
+              onChange={(value) => dispatch(patchEventsConfig({ shahid: { misfireChance: Number(value) } }))}
+            />
           </Group>
           <SoundSourceField
             label='Звук взрыва'

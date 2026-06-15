@@ -1,8 +1,10 @@
 import { Badge, Button, Group, Modal, Paper, Stack, Text } from '@mantine/core';
 import { IconBomb, IconFlame, IconMoodSmile } from '@tabler/icons-react';
 import { FC, useEffect, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
 
 import PlayerAvatar from '@domains/players/ui/PlayerAvatar';
+import { RootState } from '@reducers';
 
 import { ShahidPrompt } from '../lib/useEliminationEvents';
 
@@ -13,15 +15,17 @@ interface ShahidDialogProps {
   onExplode: (lotId: string) => void;
 }
 
-type Phase = 'arming' | { kind: 'result'; victimId: string };
+type Phase = 'arming' | { kind: 'result'; victimId: string; misfire: boolean };
 
 /**
  * The "Шахид" modal. The bomb lot already dropped; here a roulette cycles across
  * the three candidates (the bomb lot in the middle and its two wheel neighbours)
- * and randomly detonates one — a neighbour really drops out, the bomb lot itself
- * just confirms its own demise.
+ * and randomly detonates one. A configurable misfire chance can fizzle the blast
+ * (no one extra drops). The bomb lot itself always leaves regardless.
  */
 const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => {
+  const misfireChance = useSelector((root: RootState) => root.eliminationEvents.config.shahid.misfireChance);
+
   const [phase, setPhase] = useState<Phase>('arming');
   const [activeIndex, setActiveIndex] = useState(0);
   const explodedRef = useRef(false);
@@ -32,6 +36,7 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
 
     const { targets } = prompt;
     const victimIndex = Math.floor(Math.random() * targets.length);
+    const misfire = Math.random() * 100 < misfireChance;
     explodedRef.current = false;
     setPhase('arming');
     setActiveIndex(0);
@@ -48,8 +53,10 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
       // Decelerate, then stop once it lands on the chosen victim.
       if (delay > 280 && step % targets.length === victimIndex) {
         const victim = targets[victimIndex];
-        setPhase({ kind: 'result', victimId: victim.lotId });
-        if (!explodedRef.current) {
+        setPhase({ kind: 'result', victimId: victim.lotId, misfire });
+        // On a misfire the blast fizzles — no one extra is eliminated. The bomb
+        // lot itself already dropped out via the spin, so it leaves regardless.
+        if (!misfire && !explodedRef.current) {
           explodedRef.current = true;
           onExplode(victim.lotId);
         }
@@ -102,12 +109,15 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
         </Stack>
       ) : (
         <Stack>
-          <Text size='sm'>{!isResult ? 'Бомба активирована! Кто взорвётся?' : 'Взрыв!'}</Text>
+          <Text size='sm'>
+            {!isResult ? 'Бомба активирована! Кто взорвётся?' : phase.misfire ? 'Осечка!' : 'Взрыв!'}
+          </Text>
           <Group grow align='stretch'>
             {targets.map((target, index) => {
               const isVictim = isResult && phase.victimId === target.lotId;
+              const isExploded = isVictim && !phase.misfire;
               const isHighlighted = !isResult && index === activeIndex;
-              const borderColor = isVictim ? '#ff3b3b' : isHighlighted ? '#f1c40f' : undefined;
+              const borderColor = isExploded ? '#ff3b3b' : isVictim || isHighlighted ? '#f1c40f' : undefined;
 
               return (
                 <Paper
@@ -119,12 +129,12 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
                     borderColor,
                     transform: isHighlighted || isVictim ? 'scale(1.04)' : undefined,
                     transition: 'transform 0.1s ease, border-color 0.1s ease',
-                    background: isVictim ? 'rgba(255,59,59,0.12)' : 'rgba(255,255,255,0.03)',
+                    background: isExploded ? 'rgba(255,59,59,0.12)' : 'rgba(255,255,255,0.03)',
                   }}
                 >
                   <Stack gap={6} align='center'>
                     <Badge size='xs' variant='light' color='gray'>
-                      {target.position === 'middle' ? '💣 бомба' : target.position === 'left' ? '◀ слева' : 'справа ▶'}
+                      {target.position === 'left' ? '◀ слева' : 'справа ▶'}
                     </Badge>
                     {target.player ? (
                       <Group gap={6}>
@@ -141,11 +151,18 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
                     </Text>
                     <Badge variant='light'>{target.amount}</Badge>
                     {isResult ? (
-                      isVictim ? (
+                      isExploded ? (
                         <Group gap={4} c='red'>
                           <IconFlame size={18} />
                           <Text fw={700} size='sm'>
                             Взорван
+                          </Text>
+                        </Group>
+                      ) : isVictim ? (
+                        <Group gap={4} c='yellow'>
+                          <IconMoodSmile size={18} />
+                          <Text fw={700} size='sm'>
+                            Осечка
                           </Text>
                         </Group>
                       ) : (
@@ -157,7 +174,7 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
                     ) : (
                       <Group gap={4} c='orange'>
                         <IconBomb size={16} />
-                        <Text size='xs'>{isHighlighted ? '...' : ' '}</Text>
+                        <Text size='xs'>{isHighlighted ? '...' : ' '}</Text>
                       </Group>
                     )}
                   </Stack>
@@ -167,9 +184,15 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
           </Group>
           {isResult && (
             <>
-              <Text fw={700} c='red' ta='center'>
-                💥 Лот выбывает!
-              </Text>
+              {phase.misfire ? (
+                <Text fw={700} c='yellow' ta='center'>
+                  Осечка — бомба не взорвалась!
+                </Text>
+              ) : (
+                <Text fw={700} c='red' ta='center'>
+                  💥 Лот выбывает!
+                </Text>
+              )}
               <Group justify='flex-end'>
                 <Button onClick={handleClose}>Закрыть</Button>
               </Group>

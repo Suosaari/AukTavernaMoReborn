@@ -1,7 +1,7 @@
 import { WheelItem } from '@models/wheel.model';
 import { Player } from '@domains/players/model/types';
 
-export type ShahidPosition = 'left' | 'middle' | 'right';
+export type ShahidPosition = 'left' | 'right';
 
 export interface ShahidTarget {
   position: ShahidPosition;
@@ -20,10 +20,11 @@ const toTarget = (position: ShahidPosition, item: WheelItem, players: Player[]):
 });
 
 /**
- * Builds the three "Шахид" candidates from the wheel order captured at spin
- * start: the dropped lot in the middle, plus its nearest distinct wheel
- * neighbours to the left and right (wrapping around). Degrades gracefully when
- * fewer than three distinct lots are available.
+ * Builds the "Шахид" blast candidates from the wheel order captured at spin
+ * start: the dropped bomb lot's two nearest distinct wheel neighbours — the one
+ * to the left and the one to the right (wrapping around). The bomb lot itself is
+ * not a candidate (it already dropped via the spin). Degrades gracefully when
+ * fewer than two distinct neighbours are available.
  */
 export const pickShahidTargets = (order: WheelItem[], droppedId: string, players: Player[]): ShahidTarget[] => {
   const length = order.length;
@@ -43,7 +44,6 @@ export const pickShahidTargets = (order: WheelItem[], droppedId: string, players
 
   const targets: ShahidTarget[] = [];
   if (left) targets.push(toTarget('left', left, players));
-  targets.push(toTarget('middle', order[index], players));
   if (right && right.id.toString() !== left?.id.toString()) targets.push(toTarget('right', right, players));
 
   return targets;
