@@ -8,6 +8,7 @@ import { RootState } from '@reducers';
 
 import { PistolPrompt } from '../lib/useEliminationEvents';
 import { PistolTarget, pickPistolTargets } from '../lib/pickPistolTargets';
+import { getMisfireChance } from '../lib/getMisfireChance';
 
 interface PistolDialogProps {
   prompt: PistolPrompt | null;
@@ -26,7 +27,6 @@ type Phase = 'aim' | { kind: 'result'; targetId: string; hit: boolean };
 const PistolDialog: FC<PistolDialogProps> = ({ prompt, onClose, onEliminate }) => {
   const slots = useSelector((root: RootState) => root.slots.slots);
   const players = useSelector((root: RootState) => root.players.players);
-  const misfireChance = useSelector((root: RootState) => root.eliminationEvents.config.pistol.misfireChance);
 
   const [targets, setTargets] = useState<PistolTarget[]>([]);
   const [phase, setPhase] = useState<Phase>('aim');
@@ -41,7 +41,8 @@ const PistolDialog: FC<PistolDialogProps> = ({ prompt, onClose, onEliminate }) =
   }, [prompt?.lotId]);
 
   const handleShoot = (target: PistolTarget): void => {
-    const hit = Math.random() * 100 >= misfireChance;
+    // Misfire chance scales with the target's points (pricier = harder to kill).
+    const hit = Math.random() * 100 >= getMisfireChance(target.amount);
     setPhase({ kind: 'result', targetId: target.lotId, hit });
     if (hit) {
       onEliminate(target.lotId);

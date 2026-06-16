@@ -149,13 +149,10 @@ const EffectsPanel: FC = () => {
               value={pistol.pistolCount}
               onChange={(value) => dispatch(patchEventsConfig({ pistol: { pistolCount: Number(value) } }))}
             />
-            <NumberInput
-              {...numberProps}
-              label='Шанс осечки, %'
-              value={pistol.misfireChance}
-              onChange={(value) => dispatch(patchEventsConfig({ pistol: { misfireChance: Number(value) } }))}
-            />
           </Group>
+          <Text size='xs' c='dimmed'>
+            Осечка зависит от очков лота-цели: ≤5000 — 10%, &gt;5000 — 20%, &gt;10000 — 30%.
+          </Text>
           <Text size='xs' c='dimmed'>
             Чтобы выстрел выбирал лоты игроков, назначайте «кто добавил» лотам в меню «Игроки».
           </Text>
@@ -238,12 +235,6 @@ const EffectsPanel: FC = () => {
               value={shahid.bombCount}
               onChange={(value) => dispatch(patchEventsConfig({ shahid: { bombCount: Number(value) } }))}
             />
-            <NumberInput
-              {...numberProps}
-              label='Шанс осечки, %'
-              value={shahid.misfireChance}
-              onChange={(value) => dispatch(patchEventsConfig({ shahid: { misfireChance: Number(value) } }))}
-            />
           </Group>
           <SoundSourceField
             label='Звук взрыва'
@@ -252,8 +243,8 @@ const EffectsPanel: FC = () => {
             onChange={(patch) => dispatch(patchEventsConfig({ shahid: { sound: { ...shahid.sound, ...patch } } }))}
           />
           <Text size='xs' c='dimmed'>
-            Бомба достаётся случайному лоту. При выпадении взрывается один из трёх: сам лот или его сосед слева/справа на
-            колесе.
+            Бомба достаётся случайному лоту. При выпадении взрывается его сосед слева или справа на колесе. Осечка зависит
+            от очков жертвы: ≤5000 — 10%, &gt;5000 — 20%, &gt;10000 — 30%.
           </Text>
         </Stack>
       </div>

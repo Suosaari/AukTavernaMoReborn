@@ -1,12 +1,11 @@
 import { Badge, Button, Group, Modal, Paper, Stack, Text } from '@mantine/core';
 import { IconBomb, IconFlame, IconMoodSmile } from '@tabler/icons-react';
 import { FC, useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
 
 import PlayerAvatar from '@domains/players/ui/PlayerAvatar';
-import { RootState } from '@reducers';
 
 import { ShahidPrompt } from '../lib/useEliminationEvents';
+import { getMisfireChance } from '../lib/getMisfireChance';
 
 interface ShahidDialogProps {
   prompt: ShahidPrompt | null;
@@ -24,8 +23,6 @@ type Phase = 'arming' | { kind: 'result'; victimId: string; misfire: boolean };
  * (no one extra drops). The bomb lot itself always leaves regardless.
  */
 const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => {
-  const misfireChance = useSelector((root: RootState) => root.eliminationEvents.config.shahid.misfireChance);
-
   const [phase, setPhase] = useState<Phase>('arming');
   const [activeIndex, setActiveIndex] = useState(0);
   const explodedRef = useRef(false);
@@ -36,7 +33,8 @@ const ShahidDialog: FC<ShahidDialogProps> = ({ prompt, onClose, onExplode }) => 
 
     const { targets } = prompt;
     const victimIndex = Math.floor(Math.random() * targets.length);
-    const misfire = Math.random() * 100 < misfireChance;
+    // Misfire chance scales with the victim's points (pricier = harder to blow up).
+    const misfire = Math.random() * 100 < getMisfireChance(targets[victimIndex].amount);
     explodedRef.current = false;
     setPhase('arming');
     setActiveIndex(0);

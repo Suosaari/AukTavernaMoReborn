@@ -228,9 +228,21 @@ export const useEliminationEvents = ({
   const onParticipantsChange = useCallback((items: WheelItem[]) => {
     remainingRef.current = items.length;
     wheelOrderRef.current = items;
-    topLotIdRef.current =
-      items.reduce<WheelItem | null>((top, item) => (top == null || item.amount > top.amount ? item : top), null)?.id.toString() ??
-      null;
+    // The leader must be found by REAL points (redux slots): the wheel's own
+    // amounts are inverted in dropout mode (cheap lots get the biggest slice),
+    // so reducing over `item.amount` would pick the cheapest lot instead.
+    const currentIds = new Set(items.map((item) => item.id.toString()));
+    let topId: string | null = null;
+    let topAmount = -Infinity;
+    for (const slot of slotsRef.current) {
+      if (!currentIds.has(slot.id)) continue;
+      const amount = slot.amount ?? 0;
+      if (amount > topAmount) {
+        topAmount = amount;
+        topId = slot.id;
+      }
+    }
+    topLotIdRef.current = topId;
   }, []);
 
   const onSpinStart = useCallback(() => {
@@ -310,7 +322,7 @@ export const useEliminationEvents = ({
       // Shahid: the eliminated lot carried a bomb -> open the detonation roulette.
       if (!promptOpened && shahid.enabled && bombLotIdsRef.current.includes(winnerId)) {
         dispatch(removeBombLot(winnerId));
-        const targets = pickShahidTargets(spinOrderRef.current, winnerId, playersRef.current);
+        const targets = pickShahidTargets(spinOrderRef.current, winnerId, playersRef.current, slotsRef.current);
         playEventSound(shahid.sound);
         gatePromiseRef.current = new Promise<void>((resolve) => {
           gateResolveRef.current = resolve;

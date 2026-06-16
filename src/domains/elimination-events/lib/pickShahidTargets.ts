@@ -1,4 +1,5 @@
 import { WheelItem } from '@models/wheel.model';
+import { Lot } from '@models/slot.model';
 import { Player } from '@domains/players/model/types';
 
 export type ShahidPosition = 'left' | 'right';
@@ -11,13 +12,22 @@ export interface ShahidTarget {
   player: Player | null;
 }
 
-const toTarget = (position: ShahidPosition, item: WheelItem, players: Player[]): ShahidTarget => ({
-  position,
-  lotId: item.id.toString(),
-  lotName: item.displayName ?? item.name ?? '—',
-  amount: item.amount ?? 0,
-  player: players.find((player) => player.id === item.addedBy) ?? null,
-});
+const toTarget = (
+  position: ShahidPosition,
+  item: WheelItem,
+  players: Player[],
+  realAmountById: Map<string, number>,
+): ShahidTarget => {
+  const id = item.id.toString();
+  return {
+    position,
+    lotId: id,
+    lotName: item.displayName ?? item.name ?? '—',
+    // Show REAL points: the wheel's `amount` is inverted in dropout mode.
+    amount: realAmountById.get(id) ?? item.amount ?? 0,
+    player: players.find((player) => player.id === item.addedBy) ?? null,
+  };
+};
 
 /**
  * Builds the "Шахид" blast candidates from the wheel order captured at spin
@@ -26,10 +36,20 @@ const toTarget = (position: ShahidPosition, item: WheelItem, players: Player[]):
  * not a candidate (it already dropped via the spin). Degrades gracefully when
  * fewer than two distinct neighbours are available.
  */
-export const pickShahidTargets = (order: WheelItem[], droppedId: string, players: Player[]): ShahidTarget[] => {
+export const pickShahidTargets = (
+  order: WheelItem[],
+  droppedId: string,
+  players: Player[],
+  slots: Lot[] = [],
+): ShahidTarget[] => {
   const length = order.length;
   const index = order.findIndex((item) => item.id.toString() === droppedId);
   if (index === -1) return [];
+
+  const realAmountById = new Map<string, number>();
+  for (const slot of slots) {
+    if (slot.amount != null) realAmountById.set(slot.id, slot.amount);
+  }
 
   const findNeighbour = (direction: 1 | -1): WheelItem | undefined => {
     for (let offset = 1; offset < length; offset += 1) {
@@ -43,8 +63,9 @@ export const pickShahidTargets = (order: WheelItem[], droppedId: string, players
   const right = findNeighbour(1);
 
   const targets: ShahidTarget[] = [];
-  if (left) targets.push(toTarget('left', left, players));
-  if (right && right.id.toString() !== left?.id.toString()) targets.push(toTarget('right', right, players));
+  if (left) targets.push(toTarget('left', left, players, realAmountById));
+  if (right && right.id.toString() !== left?.id.toString())
+    targets.push(toTarget('right', right, players, realAmountById));
 
   return targets;
 };
